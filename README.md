@@ -1,3 +1,5 @@
+ [![https://www.singularity-hub.org/static/img/hosted-singularity--hub-%23e32929.svg](https://www.singularity-hub.org/static/img/hosted-singularity--hub-%23e32929.svg)](https://singularity-hub.org/collections/4912)
+
 ### Generate new recipes using HPC Container Maker (HPCCM)
 
     $ hpccm --recipe <recipe_name>.py --format singularity --singularity-version=3.2 > recipes/Singularity.<version-tag>
