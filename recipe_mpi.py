@@ -60,12 +60,12 @@ Stage0 += generic_cmake(cmake_opts=['-D CMAKE_BUILD_TYPE=Release',
                         directory='mrchem-{}'.format(mrchem_version))
 
 # Runtime distributable stage
-#Stage1 += baseimage(image='ubuntu:{}'.format(os_version))
-#Stage1 += Stage0.runtime()
-Stage0 += environment(variables={'PATH': '$PATH:/usr/local/mrchem/bin'})
-Stage0 += runscript(commands=['mrchem'])
+Stage1 += baseimage(image='ubuntu:{}'.format(os_version))
+Stage1 += Stage0.runtime()
+Stage1 += environment(variables={'PATH': '$PATH:/usr/local/mrchem/bin'})
+Stage1 += runscript(commands=['mrchem'])
 
-Stage0 += label(metadata={
+Stage1 += label(metadata={
     'Author': 'Stig Rune Jensen <stig.r.jensen@uit.no>',
     'Version': 'v{}'.format(mrchem_version),
     'Description': 'MRChem program (MPI+OpenMP version)',
@@ -103,4 +103,4 @@ help_str="""
         $ export OMP_NUM_THREADS=n
         $ mpirun -np N singularity exec <image-name>.sif mrchem.x mrchem.json
 """.format(openmpi_version, os_version)
-Stage0 += raw(singularity=help_str)
+Stage1 += raw(singularity=help_str)
