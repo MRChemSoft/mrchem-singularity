@@ -14,7 +14,7 @@ Generating recipe (stdout):
 """
 
 os_version='18.04'
-mrchem_version='1.0.0'
+mrchem_version='1.0.1'
 cmake_version='3.16.3'
 openmpi_version='4.0.5'
 
