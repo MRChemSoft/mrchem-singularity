@@ -1,4 +1,4 @@
- [![https://www.singularity-hub.org/static/img/hosted-singularity--hub-%23e32929.svg](https://www.singularity-hub.org/static/img/hosted-singularity--hub-%23e32929.svg)](https://singularity-hub.org/collections/4912)
+[![https://singularityhub.github.io/singularityhub-docs/assets/img/hosted-singularity--hub-%23e32929.svg](https://singularityhub.github.io/singularityhub-docs/assets/img/hosted-singularity--hub-%23e32929.svg)](https://singularity-hub.org/collections/4912) 
 
 ### Generate new recipes using HPC Container Maker (HPCCM)
 
