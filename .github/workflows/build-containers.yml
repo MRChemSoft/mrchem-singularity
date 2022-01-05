@@ -66,7 +66,7 @@ jobs:
           # Continue if the Singularity recipes changed
           echo "Added, modified, removed files:"
           echo '${{ needs.changes.outputs.changed_files }}' | tee changed_files.json
-          changed="$(cat changed_files.json | jq 'any(.[]; . == "Singularity.${{ matrix.program }}-${{ matrix.variant }}")')"
+          changed="$(cat changed_files.json | jq 'any(.[]; . == "Singularity.${{ matrix.variant }}")')"
           if [[ "$changed" == "true" ]]; then
              echo "Container to build: Singularity.${{ matrix.program }}-${{ matrix.variant }}"
              echo "keepgoing=true" >> $GITHUB_ENV
