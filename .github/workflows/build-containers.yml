@@ -44,11 +44,11 @@ jobs:
         program:
           - 'mrchem'
         version:
-          - 'v1.0.1'
-          - 'master'
+          - '1.0.2'
+            #- 'master'
         variant:
           - 'nompi'
-          - 'openmpi4.0.5'
+            #- 'openmpi4.0.5'
 
     container:
       image: quay.io/singularity/singularity:v${{ matrix.singularity_version }}
@@ -66,9 +66,9 @@ jobs:
           # Continue if the Singularity recipes changed
           echo "Added, modified, removed files:"
           echo '${{ needs.changes.outputs.changed_files }}' | tee changed_files.json
-          changed="$(cat changed_files.json | jq 'any(.[]; . == "Singularity.${{ matrix.variant }}")')"
+          changed="true" #"$(cat changed_files.json | jq 'any(.[]; . == "Singularity.${{ matrix.variant }}")')"
           if [[ "$changed" == "true" ]]; then
-             echo "Container to build: Singularity.${{ matrix.program }}-${{ matrix.variant }}"
+             echo "Container to build: Singularity.v${{ matrix.version }}-${{ matrix.variant }}"
              echo "keepgoing=true" >> $GITHUB_ENV
           else
              echo "Nothing to build!"
@@ -78,14 +78,15 @@ jobs:
         if: ${{ env.keepgoing == 'true' }}
         env:
           image_name: ${{ matrix.program }}-${{ matrix.version }}-${{ matrix.variant }}
-          recipe: Singularity.${{ matrix.version }}-${{ matrix.variant }}
+          pre_recipe: Singularity.${{ matrix.variant }}
+          post_recipe: Singularity.${{ matrix.version }}-${{ matrix.variant }}
         run: |
           echo "Building version ${{ matrix.version }} of ${{ matrix.program }}"
 
           if [[ "${keepgoing}" == "true" ]]; then
              echo "IMAGE_NAME=$image_name" >> $GITHUB_ENV
-             sed "s/@_VERSION_@/${{ matrix.version }}/g" "$recipe" > Singularity."$image_name"
-             sudo -E singularity build container.sif Singularity."$image_name"
+             sed "s/@_VERSION_@/${{ matrix.version }}/g" "$pre_recipe" > "$post_recipe"
+             sudo -E singularity build container.sif "$post_recipe"
              # use latest as tag
              tag="latest"
              # Build the container and name by tag
