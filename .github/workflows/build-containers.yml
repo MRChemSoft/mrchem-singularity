@@ -1,0 +1,108 @@
+name: Singularity Build (docker)
+on: 
+  push:
+
+    # Edit the branches here if you want to change deploy behavior
+    branches:
+      - master
+
+  # Do the builds on all pull requests (to test them)
+  pull_request: []
+
+jobs:
+  changes:
+    name: "Changed Singularity Recipes"
+    runs-on: ubuntu-latest
+
+    outputs:
+      changed_files: ${{ steps.combine.outputs.changed_files }}
+
+    steps:
+      - id: files
+        uses: Ana06/get-changed-files@v2.0.0
+        with:
+          format: 'json'
+
+      - id: combine
+        run: |
+          echo '${{ steps.files.outputs.added_modified }}' | tee added_modified.json
+          echo '${{ steps.files.outputs.renamed }}' | tee renamed.json
+          changes="$(cat added_modified.json renamed.json | jq -r -s 'add | unique | sort')"
+          echo "Added, modified, renamed files: $changes"
+          echo ::set-output name=changed_files::$(echo $changes | jq -c .)
+
+  build-test-containers:
+    needs:
+      - changes
+    runs-on: ubuntu-latest
+    strategy:
+      # Keep going on other deployments if anything bloops
+      fail-fast: false
+      matrix:
+        singularity_version:
+          - '3.9.2'
+        program:
+          - 'mrchem'
+        version:
+          - 'v1.0.1'
+          - 'master'
+        variant:
+          - 'nompi'
+          - 'openmpi4.0.5'
+
+    container:
+      image: quay.io/singularity/singularity:v${{ matrix.singularity_version }}
+      options: --privileged
+
+    name: Build ${{ matrix.program }}-${{ matrix.version }}-${{ matrix.variant }}
+    steps:
+
+      - name: Check out code for the container builds
+        uses: actions/checkout@v2
+
+      - name: Continue if the singularity recipe was changed
+        run: |
+          apk add jq
+          # Continue if the Singularity recipes changed
+          echo "Added, modified, removed files:"
+          echo '${{ needs.changes.outputs.changed_files }}' | tee changed_files.json
+          changed="$(cat changed_files.json | jq 'any(.[]; . == "Singularity.${{ matrix.program }}-${{ matrix.variant }}")')"
+          if [[ "$changed" == "true" ]]; then
+             echo "Container to build: Singularity.${{ matrix.program }}-${{ matrix.variant }}"
+             echo "keepgoing=true" >> $GITHUB_ENV
+          else
+             echo "Nothing to build!"
+          fi
+
+      - name: Build container
+        if: ${{ env.keepgoing == 'true' }}
+        env:
+          image_name: ${{ matrix.program }}-${{ matrix.version }}-${{ matrix.variant }}
+          recipe: Singularity.${{ matrix.version }}-${{ matrix.variant }}
+        run: |
+          echo "Building version ${{ matrix.version }} of ${{ matrix.program }}"
+
+          if [[ "${keepgoing}" == "true" ]]; then
+             echo "IMAGE_NAME=$image_name" >> $GITHUB_ENV
+             sed "s/@_VERSION_@/${{ matrix.version }}/g" "$recipe" > Singularity."$image_name"
+             sudo -E singularity build container.sif Singularity."$image_name"
+             # use latest as tag
+             tag="latest"
+             # Build the container and name by tag
+             echo "TAG=$tag" >> $GITHUB_ENV
+          else
+             echo "No changes in $image_name"
+             echo "Present working directory: $PWD"
+             ls
+          fi
+
+      - name: Login and deploy container
+        if: (github.event_name != 'pull_request')
+        env:
+          keepgoing: ${{ env.keepgoing }}
+        run: |         
+          if [[ "${keepgoing}" == "true" ]]; then
+             echo ${{ secrets.GITHUB_TOKEN }} | singularity remote login -u ${{ secrets.GHCR_USERNAME }} --password-stdin oras://ghcr.io
+             echo "Pushing $IMAGE_NAME with tag $TAG"
+             singularity push container.sif oras://ghcr.io/${GITHUB_REPOSITORY}/${IMAGE_NAME}:${TAG}
+          fi
